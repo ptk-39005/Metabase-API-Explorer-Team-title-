@@ -20,6 +20,7 @@
 # Metabase Login
 - username: lonaripratik6@gmail.com
 - password: Pratik123@99
+- (If you want to use your credentials, update the keys and values accordingly!)
 
 ![Web-application](https://github.com/ptk-39005/Metabase-API-Explorer-Team-title-/blob/0a2da4e5062ea4cfbb2c0e1ec38a2d6b7fc6a32d/Screenshot%20from%202023-01-21%2022-09-38.png)
 
