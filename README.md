@@ -21,5 +21,5 @@
 - username: lonaripratik6@gmail.com
 - password: Pratik123@99
 
-![alt text](
-Metabase-API-Explorer-Team-title-/Screenshot from 2023-01-21 22-09-38.png )
+![Web-application](https://github.com/ptk-39005/Metabase-API-Explorer-Team-title-/blob/0a2da4e5062ea4cfbb2c0e1ec38a2d6b7fc6a32d/Screenshot%20from%202023-01-21%2022-09-38.png)
+
