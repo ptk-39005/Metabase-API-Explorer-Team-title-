@@ -20,4 +20,6 @@
 # Metabase Login
 - username: lonaripratik6@gmail.com
 - password: Pratik123@99
-![Alt text](image.jpg)
+
+![alt text](
+Metabase-API-Explorer-Team-title-/Screenshot from 2023-01-21 22-09-38.png )
