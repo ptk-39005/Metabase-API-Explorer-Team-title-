@@ -1,3 +1,4 @@
+import io
 import webbrowser
 
 import streamlit as st
@@ -16,6 +17,8 @@ base_url = "http://localhost:3000"
 headers = {"X-Metabase-Session": "8b9d9ed7-3bdb-4c53-998e-f08c802e5c3b"}
 api_key = "8b9d9ed7-3bdb-4c53-998e-f08c802e5c3b"
 admin = False
+
+data = {"username": "lonaripratik6@gmail.com", "password": "Pratik123@99"}
 st.set_page_config(page_title="Metabase Data Exploration and Analysis Tool", page_icon=":guardsman:",
                    initial_sidebar_state="auto")
 st.title("Welcome to the Metabase API Explorer")
@@ -117,29 +120,23 @@ load_accounts()
 
 
 def fetch_databases():
-    data = {"username": "lonaripratik6@gmail.com", "password": "Pratik123@99"}
-
     response = requests.post("http://localhost:3000/api/session", data=json.dumps(data), headers=headers)
-    session_token = response.json()["id"]
 
-    params = {"include": "tables", "saved": "true", "include_editable_data_model": "true",
-              "exclude_uneditable_details": "false"}
+    params = {"include": "tables", "saved": "true", "include_editable_data_model": "false",
+              "exclude_uneditable_details": "true"}
     response = requests.get("http://localhost:3000/api/database/", headers=headers, params=params)
     st.write(response.json())
 
 
 def hide_tables(selected_tables):
     st.success("Successful")
-    data = {"username": "lonaripratik6@gmail.com", "password": "Pratik123@99"}
     headers = {"Content-Type": "application/json"}
     response = requests.post("http://localhost:3000/api/session", data=json.dumps(data), headers=headers)
-    session_token = response.json()["id"]
-    api_key = "8b9d9ed7-3bdb-4c53-998e-f08c802e5c3b"
 
     # Fetch a specific database
     database_id = 8
     headers = {"X-Metabase-Session": "8b9d9ed7-3bdb-4c53-998e-f08c802e5c3b"}
-    table_id = [1, 2, 3, 7, 8]
+
     if not selected_tables:
         st.warning("Please select at least one table to hide.")
         return
@@ -160,7 +157,6 @@ def hide_tables(selected_tables):
 
 
 def metadata(table_id):
-    headers = {"X-Metabase-Session": "8b9d9ed7-3bdb-4c53-998e-f08c802e5c3b"}
     params = {
         "include_sensitive_fields": "true",
         "include_hidden_fields": "true",
@@ -198,11 +194,47 @@ def metadata_users(table_id):
             st.error("Failed to retrieve query metadata for table {}. Error: {}".format(table_id, response.text))
         else:
             data = json.dumps(response.json())
-            file_path = "table{}.json".format(table_id)
+            file_path = "table{}{}.json".format(table_id, users)
 
             with open(file_path, "w") as f:
                 f.write(data)
             webbrowser.open(file_path)
+
+
+def test(card):
+    export_format = "csv"
+    query = {
+        "database": 2,
+        "type": "native",
+        "native": {
+            "query": "SELECT * FROM table",
+            "limit": 100
+        }
+    }
+    payload = json.dumps({"parameters": {"query": query}})
+
+    response = requests.post("http://localhost:3000/api/card/{}/query/{}".format(card, export_format), headers=headers,
+                             data=payload)
+    if st.button('Fetch Dataset'):
+        if response.status_code == 200:
+            with open("export_{}.{}".format(card, export_format), 'wb') as f:
+                f.write(response.content)
+            # st.success(f"Data exported to export_{card}.{export_format}")
+            df = pd.read_csv("export_{}.{}".format(card, export_format))
+
+            # Limit number of rows to 100
+            df = df.head(20)
+
+            # Save the limited data to a new CSV file
+            df.to_csv("export_{}_limited.{}".format(card, export_format), index=False)
+            df = pd.read_csv("export_{}_limited.{}".format(card, export_format))
+
+            # Display the DataFrame in a Streamlit table
+            st.dataframe(df)
+
+        else:
+            st.error("Error occurred while exporting data")
+
 
 
 def main():
@@ -224,7 +256,8 @@ def main():
                 response = requests.get("{}/api/table/".format(base_url), headers=headers, auth=('api_key', api_key))
                 tables = response.json()
                 table_names = [table["name"] for table in tables]
-                s1="Select tables to hide"
+                st.write("If you want to hide specific tables, select from the multiselect option :")
+                s1 = "Select tables to hide"
                 selected_tables = st.multiselect("**{}**".format(s1), table_names)
                 if "multi" not in st.session_state:
                     st.session_state.multi = False
@@ -235,6 +268,9 @@ def main():
                             hide_tables(selected_tables)
                     else:
                         st.warning("Please select at least one table to hide.")
+                st.write("")
+                st.write("")
+                st.write("To fetch Meta Data of a specific table :")
                 st.write("Meta Data")
                 idx = st.number_input("Enter the table ID", min_value=1, max_value=8)
                 if "idx_state" not in st.session_state:
@@ -242,7 +278,9 @@ def main():
                 if idx or st.session_state.idx_state:
                     st.session_state.idx_state = True
                     metadata(idx)
-
+                st.write("")
+                st.write("")
+                st.write("To go the database (As visible to normal users)")
                 button = st.button('Go to Database(Users)')
                 if "but_state" not in st.session_state:
                     st.session_state.but_state = False
@@ -252,6 +290,9 @@ def main():
                     st.markdown(
                         "<a href='http://localhost:3000/browse/1-sample-database' target='_blank'>Database Link</a>",
                         unsafe_allow_html=True)
+                st.write("")
+                st.write("")
+                st.write("To go the admin dashboard for the Metabase :")
                 button1 = st.button('Go to Admin Dashboard')
                 if "but1_state" not in st.session_state:
                     st.session_state.but1_state = False
@@ -262,14 +303,36 @@ def main():
                         "<a href='http://localhost:3000/admin/settings/setup' target='_blank'>Admin Dashboard</a>",
                         unsafe_allow_html=True)
             else:
+                st.write("To get the Data Table by table id :")
+                st.write("Data Table")
+                idx1 = st.number_input("Enter the table ID", min_value=1, max_value=8, key="124")
+                if "idx_state1" not in st.session_state:
+                    st.session_state.idx_state1 = False
+                if idx1 or st.session_state.idx_state1:
+                    st.session_state.idx_state1 = True
+                    test(idx1)
+                st.write("")
+                st.write("")
+                st.write("To get the meta data of the entire Database")
+                button2 = st.button("Get Database Meta Data")
+                if 'but2_state' not in st.session_state:
+                    st.session_state.but2_state = False
+                if button2 or st.session_state.but2_state:
+                    st.session_state.but2_state = True
+                    fetch_databases()
+                st.write("")
+                st.write("")
+                st.write("To get the Metadata of a specific table")
                 st.write("Meta Data")
-                idx = st.number_input("Enter the table ID", min_value=1, max_value=8)
+                idx = st.number_input("Enter the table ID", min_value=1, max_value=8, key="1234")
                 if "idx_state" not in st.session_state:
                     st.session_state.idx_state = False
                 if idx or st.session_state.idx_state:
                     st.session_state.idx_state = True
                     metadata_users(idx)
-
+                st.write("")
+                st.write("")
+                st.write("To go to the Metabase database :")
                 button = st.button('Go to Database')
                 if "but_state" not in st.session_state:
                     st.session_state.but_state = False
@@ -285,3 +348,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+   # fetch_databases()
+# test()
